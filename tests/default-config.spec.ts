@@ -22,7 +22,7 @@ test.describe('Config 1 tests', () => {
         '--disable-web-security',
         '--disable-features=IsolateOrigins,site-per-process'
       ],
-      // headless: true
+      headless: true
     });
 
     // Create a context with permissions for the camera
@@ -87,16 +87,19 @@ test.describe('Config 1 tests', () => {
     let fontInput = page.locator('.complycube-sdk-ui-CustomFileInput-input')
     await fontInput.setInputFiles(`${PATH_TO_SAMPLES}/dl_front_example.jpeg`);
 
+
     await expect(page.getByText('Check image quality')).toBeVisible();
     await expect(page.getByAltText('Photo of your document')).toBeVisible();
     await expect(page.getByText('Please ensure your driving')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Enlarge image' })).toBeEnabled();
     await expect(page.getByRole('button', { name: 'Back' }).nth(1)).toBeEnabled();
 
+    // Needed otherwise SDK never loads to back upload
+    await page.waitForTimeout(1000); 
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Back upload
-    await expect(page.getByText('Provide the back of your')).toBeVisible();
+    await expect(page.getByText('Provide the back of your')).toBeVisible({timeout: 20000}); // Usually takes ~9000ms
     await expect(page.getByRole('heading', { name: 'Photo must be of a good' })).toBeVisible();
     await expect(page.locator('.complycube-sdk-ui-Uploader-iconContainer')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Capture using phone' })).toBeEnabled();
@@ -115,7 +118,7 @@ test.describe('Config 1 tests', () => {
 
   test('Face Capture', async () => {
     // Intro
-    await expect(page.getByText('Take a selfie')).toBeVisible();
+    await expect(page.getByText('Take a selfie')).toBeVisible({timeout: 15000}); // Usually takes ~5000ms
     await expect(page.getByRole('heading', { name: 'Please follow the guidance' })).toBeVisible();
     await expect(page.getByLabel('Tips to take a good selfie')).toBeVisible();
     // Camera page
