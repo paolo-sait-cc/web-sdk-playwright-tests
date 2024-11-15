@@ -4,10 +4,10 @@ import { DocumentCaptureFlows } from './document-capture';
 import { poaCaptureFlow } from './poa-capture';
 const apiKey = process.env.API_KEY ?? ''
 
-const config = "config11";
+const config = "config17777";
 const PATH_TO_SAMPLES = "/Users/paolo.sait/Documents/playwright-test-project/samples"
 
-test.describe(`${config} tests`, () => {
+test.describe(`${config}: Positive User Flow`, () => {
 
   let page;
   let browser;
@@ -48,14 +48,14 @@ test.describe(`${config} tests`, () => {
         '--use-fake-device-for-media-stream',
         '--use-fake-ui-for-media-stream',
         `--use-file-for-fake-video-capture=${PATH_TO_SAMPLES}/test.y4m`,
-        // '--disable-blink-features=AutomationControlled',
-        // '--no-sandbox',
-        // '--disable-setuid-sandbox',
-        // '--disable-dev-shm-usage',
-        // '--disable-web-security',
-        // '--disable-features=IsolateOrigins,site-per-process'
+        '--disable-blink-features=AutomationControlled',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-web-security',
+        '--disable-features=IsolateOrigins,site-per-process'
       ],
-      // headless: true
+      headless: true
     });
 
     // Create a context with permissions for the camera
@@ -81,6 +81,7 @@ test.describe(`${config} tests`, () => {
     browser.close()
   })
 
+
   if (stages.map(e => e.name).includes("intro")) {
     test('Intro', async () => {
       let stageOptions = stages.filter(stage => stage.name === "intro")[0]["options"];
@@ -97,13 +98,13 @@ test.describe(`${config} tests`, () => {
       await expect(page.getByText('Text Line 2')).toBeVisible({ visible: noOfMessages > 1 })
       await expect(page.getByText('Text Line 3')).toBeVisible({ visible: noOfMessages > 2 })
 
-
       await expect(page.locator('.complycube-sdk-ui-Welcome-iconContainer')).toBeVisible();
       await expect(page.getByLabel('Close identity verification')).toBeVisible();
 
       await page.getByRole('button', { name: stageOptions["startButtonText"] ?? 'Start' }).click();
     })
   }
+
 
   if (stages.map(e => e.name).includes("userConsentCapture")) {
     test('Consent', async () => {
@@ -115,8 +116,9 @@ test.describe(`${config} tests`, () => {
     })
   }
 
+
   if (stages.map(e => e.name).includes("documentCapture")) {
-    test('Document Upload with GB DL', async () => {
+    test('Document Upload', async () => {
       let stageOptions = stages.filter(stage => stage.name === "documentCapture")[0]["options"];
 
       // Check for correct text
@@ -143,8 +145,8 @@ test.describe(`${config} tests`, () => {
 
       await page.getByRole('button', { name: 'Next' }).click();
     })
-
   }
+
 
   if (stages.map(e => e.name).includes("faceCapture")) {
     test('Face Capture', async () => {
@@ -162,21 +164,18 @@ test.describe(`${config} tests`, () => {
 
       await page.getByRole('button', { name: 'Next' }).click();
     });
-
   }
+
 
   if (stages.map(e => e.name).includes("poaCapture")) {
     test('Poa', async () => {
       let stageOptions = stages.filter(stage => stage.name === "poaCapture")[0]["options"];
 
-      console.log(stageOptions['documentTypes']['utility_bill'])
-      console.log(stageOptions['documentTypes']['bank_statement'])
-
       await expect(page.getByText('Provide Proof of Address')).toBeVisible()
       await expect(page.getByRole('heading', { name: 'Please use a document issued' })).toBeVisible()
 
-      await expect(page.getByRole('button', { name: 'Bank Statement Bank or' })).toBeVisible({visible: stageOptions['documentTypes']['bank_statement']})
-      await expect(page.getByRole('button', { name: 'Utility Bill Gas, electricity' })).toBeVisible({visible: stageOptions['documentTypes']['utility_bill']})
+      await expect(page.getByRole('button', { name: 'Bank Statement Bank or' })).toBeVisible({ visible: stageOptions['documentTypes']['bank_statement'] })
+      await expect(page.getByRole('button', { name: 'Utility Bill Gas, electricity' })).toBeVisible({ visible: stageOptions['documentTypes']['utility_bill'] })
 
       if (stageOptions['documentTypes']['utility_bill']) {
         await poaCaptureFlow.utility(page)
@@ -186,15 +185,17 @@ test.describe(`${config} tests`, () => {
     })
   }
 
+
   if (stages.map(e => e.name).includes("completion")) {
     console.log('completion')
   }
 
+
   test('Flow completed successfully', async () => {
-    // Custom expect function that will keep checking for the dashed line
+    // Custom expect function that will keep checking for the onComplete
     await expect(async () => {
-      const hasDashedLine = consoleMessages.some(msg => msg.includes('--------'));
-      expect(hasDashedLine, 'Expected to find dashed line in console output').toBe(true);
+      const hasDashedLine = consoleMessages.some(msg => msg.includes('onComplete'));
+      expect(hasDashedLine, 'Expected to find onComplete in console output').toBe(true);
     }).toPass({
       timeout: 5000,
       intervals: [100] // Check every 100ms
