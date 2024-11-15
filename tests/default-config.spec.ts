@@ -1,8 +1,9 @@
 import { test, expect, chromium, Page, Locator } from '@playwright/test';
 import configurations from '../samples/configurations.json';
+import { DocumentCaptureFlows } from './document-capture';
 const apiKey = process.env.API_KEY ?? ''
 
-const config = "config16330";
+const config = "config19186";
 const PATH_TO_SAMPLES = "/Users/paolo.sait/Documents/playwright-test-project/samples"
 
 test.describe(`${config} tests`, () => {
@@ -18,7 +19,14 @@ test.describe(`${config} tests`, () => {
       },
       {
         name: "documentCapture",
-        options: {}
+        options: {
+          documentTypes: {
+            driving_license: true,
+            national_identity_card: true,
+            residence_permit: true,
+            passport: true
+          },
+        }
       },
       {
         name: "faceCapture",
@@ -46,7 +54,7 @@ test.describe(`${config} tests`, () => {
         // '--disable-web-security',
         // '--disable-features=IsolateOrigins,site-per-process'
       ],
-      headless: true
+      // headless: true
     });
 
     // Create a context with permissions for the camera
@@ -108,6 +116,8 @@ test.describe(`${config} tests`, () => {
 
   if (stages.map(e => e.name).includes("documentCapture")) {
     test('Document Upload with GB DL', async () => {
+      let stageOptions = stages.filter(stage => stage.name === "documentCapture")[0]["options"];
+
       // Check for correct text
       await expect(page.getByText('Select document type')).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Please use a government-' })).toBeVisible();
@@ -119,54 +129,16 @@ test.describe(`${config} tests`, () => {
       await expect(page.getByRole('button', { name: 'National identity card Front' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Residence permit Front and' })).toBeVisible();
 
-      // Navigate
-      await page.getByRole('button', { name: 'Driving license Front and back' }).click();
+      if (stageOptions['documentTypes']['national_identity_card']) {
+        await DocumentCaptureFlows.identityCard(page)
+      } else if (stageOptions['documentTypes']['driving_license']) {
+        await DocumentCaptureFlows.driversLicense(page)
+      } else if (stageOptions['documentTypes']['residence_permit']) {
+        await DocumentCaptureFlows.residentsPermit(page)
+      } else if (stageOptions['documentTypes']['passport']) {
+        await DocumentCaptureFlows.passport(page)
+      }
 
-      await expect(page.getByText('Select issuing country')).toBeVisible();
-      // Check button is disabled before country selected
-      await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled();
-
-      await page.getByPlaceholder('e.g. United States').click();
-      await page.getByPlaceholder('e.g. United States').fill('United Kingdom');
-      await page.getByRole('option', { name: 'United Kingdom' }).click();
-      await page.getByRole('button', { name: 'Next' }).click();
-
-      // Front upload
-      await expect(page.getByText('Provide the front of your')).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Photo must be of a good' })).toBeVisible();
-      await expect(page.locator('.complycube-sdk-ui-Uploader-iconContainer')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Capture using phone' })).toBeEnabled();
-
-      await page.getByRole('button', { name: 'or upload an existing photo' }).click();
-      let fontInput = page.locator('.complycube-sdk-ui-CustomFileInput-input')
-      await fontInput.setInputFiles(`${PATH_TO_SAMPLES}/dl_back_example_compressed2.jpeg`);
-
-
-      await expect(page.getByText('Check image quality')).toBeVisible();
-      await expect(page.getByAltText('Photo of your document')).toBeVisible();
-      await expect(page.getByText('Please ensure your driving')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Enlarge image' })).toBeEnabled();
-      await expect(page.getByRole('button', { name: 'Back' }).nth(1)).toBeEnabled();
-
-      // Needed otherwise SDK never loads to back upload
-      await page.waitForTimeout(1000);
-      await page.getByRole('button', { name: 'Next' }).click();
-
-      // Back upload
-      await expect(page.getByText('Provide the back of your')).toBeVisible({ timeout: 20000 }); // Usually takes ~9000ms
-      await expect(page.getByRole('heading', { name: 'Photo must be of a good' })).toBeVisible();
-      await expect(page.locator('.complycube-sdk-ui-Uploader-iconContainer')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Capture using phone' })).toBeEnabled();
-
-      await page.getByRole('button', { name: 'or upload an existing photo' }).click();
-      let backInput = page.locator('.complycube-sdk-ui-CustomFileInput-input')
-      await backInput.setInputFiles(`${PATH_TO_SAMPLES}/dl_back_example_compressed2.jpeg`);
-
-      await expect(page.getByText('Check image quality')).toBeVisible();
-      await expect(page.getByAltText('Photo of your document')).toBeVisible();
-      await expect(page.getByText('Please ensure your driving')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Enlarge image' })).toBeEnabled();
-      await expect(page.getByRole('button', { name: 'Back' }).nth(1)).toBeEnabled();
       await page.getByRole('button', { name: 'Next' }).click();
     })
 
@@ -191,9 +163,44 @@ test.describe(`${config} tests`, () => {
     });
 
   }
-  if (stages.map(e => e.name).includes("poaCapture")) {
 
+  if (stages.map(e => e.name).includes("poaCapture")) {
+    test('Poa', async () => {
+      await expect(page.getByText('Provide Proof of Address')).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Please use a document issued' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Bank Statement Bank or' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Utility Bill Gas, electricity' })).toBeVisible()
+
+      await page.getByRole('button', { name: 'Bank Statement Bank or' }).click()
+
+      await expect(page.getByText('Provide statement')).toBeVisible()
+      await expect(page.getByText('Must be issued in the last 3')).toBeVisible()
+      await expect(page.getByText('Make sure it clearly shows:')).toBeVisible()
+      await expect(page.getByText('Full nameAddressDate /')).toBeVisible()
+
+      await page.getByRole('button', { name: 'Continue' }).click()
+
+      await expect(page.getByText('Provide statement')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Photo must be of a good' })).toBeVisible();
+      await expect(page.locator('.complycube-sdk-ui-Uploader-iconContainer')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Capture using phone' })).toBeEnabled();
+
+
+      let input = page.locator('.complycube-sdk-ui-CustomFileInput-input')
+      await input.setInputFiles(`${PATH_TO_SAMPLES}/utility_bill_example.png`);
+
+      await expect(page.getByText('Check image quality')).toBeVisible();
+      await expect(page.getByAltText('Photo of your document')).toBeVisible();
+      await expect(page.getByText('Please ensure your')).toBeVisible(); // Modify to check the whole text
+      await expect(page.getByRole('button', { name: 'Enlarge image' })).toBeEnabled();
+      await expect(page.getByRole('button', { name: 'Back' }).nth(1)).toBeEnabled();
+
+      await page.getByRole('button', { name: 'Next' }).click()
+
+
+    })
   }
+
   if (stages.map(e => e.name).includes("completion")) {
     console.log('completion')
   }
