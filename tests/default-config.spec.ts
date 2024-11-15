@@ -1,9 +1,10 @@
 import { test, expect, chromium, Page, Locator } from '@playwright/test';
 import configurations from '../samples/configurations.json';
 import { DocumentCaptureFlows } from './document-capture';
+import { poaCaptureFlow } from './poa-capture';
 const apiKey = process.env.API_KEY ?? ''
 
-const config = "config19186";
+const config = "config11";
 const PATH_TO_SAMPLES = "/Users/paolo.sait/Documents/playwright-test-project/samples"
 
 test.describe(`${config} tests`, () => {
@@ -123,11 +124,12 @@ test.describe(`${config} tests`, () => {
       await expect(page.getByRole('heading', { name: 'Please use a government-' })).toBeVisible();
       await expect(page.getByLabel('Back')).toBeVisible();
       await expect(page.getByLabel('Close identity verification')).toBeVisible();
+
       // Check for all options
-      await expect(page.getByRole('button', { name: 'Passport Photo page' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Driving license Front and back' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'National identity card Front' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Residence permit Front and' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Passport Photo page' })).toBeVisible({ visible: stageOptions['documentTypes']['passport'] });
+      await expect(page.getByRole('button', { name: 'Driving license Front and back' })).toBeVisible({ visible: stageOptions['documentTypes']['driving_license'] });
+      await expect(page.getByRole('button', { name: 'National identity card Front' })).toBeVisible({ visible: stageOptions['documentTypes']['national_identity_card'] });
+      await expect(page.getByRole('button', { name: 'Residence permit Front and' })).toBeVisible({ visible: stageOptions['documentTypes']['residence_permit'] });
 
       if (stageOptions['documentTypes']['national_identity_card']) {
         await DocumentCaptureFlows.identityCard(page)
@@ -143,9 +145,8 @@ test.describe(`${config} tests`, () => {
     })
 
   }
+
   if (stages.map(e => e.name).includes("faceCapture")) {
-
-
     test('Face Capture', async () => {
       // Intro
       await expect(page.getByText('Take a selfie')).toBeVisible({ timeout: 15000 }); // Usually takes ~5000ms
@@ -166,38 +167,22 @@ test.describe(`${config} tests`, () => {
 
   if (stages.map(e => e.name).includes("poaCapture")) {
     test('Poa', async () => {
+      let stageOptions = stages.filter(stage => stage.name === "poaCapture")[0]["options"];
+
+      console.log(stageOptions['documentTypes']['utility_bill'])
+      console.log(stageOptions['documentTypes']['bank_statement'])
+
       await expect(page.getByText('Provide Proof of Address')).toBeVisible()
       await expect(page.getByRole('heading', { name: 'Please use a document issued' })).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Bank Statement Bank or' })).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Utility Bill Gas, electricity' })).toBeVisible()
 
-      await page.getByRole('button', { name: 'Bank Statement Bank or' }).click()
+      await expect(page.getByRole('button', { name: 'Bank Statement Bank or' })).toBeVisible({visible: stageOptions['documentTypes']['bank_statement']})
+      await expect(page.getByRole('button', { name: 'Utility Bill Gas, electricity' })).toBeVisible({visible: stageOptions['documentTypes']['utility_bill']})
 
-      await expect(page.getByText('Provide statement')).toBeVisible()
-      await expect(page.getByText('Must be issued in the last 3')).toBeVisible()
-      await expect(page.getByText('Make sure it clearly shows:')).toBeVisible()
-      await expect(page.getByText('Full nameAddressDate /')).toBeVisible()
-
-      await page.getByRole('button', { name: 'Continue' }).click()
-
-      await expect(page.getByText('Provide statement')).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Photo must be of a good' })).toBeVisible();
-      await expect(page.locator('.complycube-sdk-ui-Uploader-iconContainer')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Capture using phone' })).toBeEnabled();
-
-
-      let input = page.locator('.complycube-sdk-ui-CustomFileInput-input')
-      await input.setInputFiles(`${PATH_TO_SAMPLES}/utility_bill_example.png`);
-
-      await expect(page.getByText('Check image quality')).toBeVisible();
-      await expect(page.getByAltText('Photo of your document')).toBeVisible();
-      await expect(page.getByText('Please ensure your')).toBeVisible(); // Modify to check the whole text
-      await expect(page.getByRole('button', { name: 'Enlarge image' })).toBeEnabled();
-      await expect(page.getByRole('button', { name: 'Back' }).nth(1)).toBeEnabled();
-
-      await page.getByRole('button', { name: 'Next' }).click()
-
-
+      if (stageOptions['documentTypes']['utility_bill']) {
+        await poaCaptureFlow.utility(page)
+      } else {
+        await poaCaptureFlow.bank(page)
+      }
     })
   }
 
