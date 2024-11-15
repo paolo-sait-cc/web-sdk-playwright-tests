@@ -1,7 +1,7 @@
 import { test, expect, chromium, Page, Locator } from '@playwright/test';
 import configurations from '../samples/configurations.json';
+const apiKey = process.env.API_KEY ?? ''
 
-const API_KEY = "test_TmMyMnVCU21TeGZwMkJOcVk6YmQ4NDY2ODc0ZmU0ZjA3ZDc2ZTA0MDQ4NmI5MGE5ZGE3NTFiMmI4MDlhOGUwN2MyODZkZmU5YzY5ZjMxOTlmNg==";
 const config = "config16330";
 const PATH_TO_SAMPLES = "/Users/paolo.sait/Documents/playwright-test-project/samples"
 
@@ -64,7 +64,7 @@ test.describe(`${config} tests`, () => {
       consoleMessages.push(msg.text());
     });
 
-    await page.goto(`https://web-sdk-test-app.vercel.app/verify?apiKey=${encodeURIComponent(decodeURIComponent(API_KEY))}&config=${config}`);
+    await page.goto(`https://web-sdk-test-app.vercel.app/verify?apiKey=${encodeURIComponent(decodeURIComponent(apiKey))}&config=${config}`);
 
   })
 
@@ -75,7 +75,7 @@ test.describe(`${config} tests`, () => {
   if (stages.map(e => e.name).includes("intro")) {
     test('Intro', async () => {
       let stageOptions = stages.filter(stage => stage.name === "intro")[0]["options"];
-      
+
       let hasHeading = stageOptions?.heading ?? false as boolean
       await expect(page.getByText('Verify your identity now')).toBeVisible({ visible: !hasHeading })
       await expect(page.getByText('Intro heading')).toBeVisible({ visible: hasHeading })
